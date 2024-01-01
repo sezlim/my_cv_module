@@ -1,0 +1,7 @@
+# 이 파일은 프레임 검출기 서버형 에 관련된 패키지를 명시합니다.
+# pip install -r requirements.txt 으로 사용 하시면 됩니다.
+
+pymediainfo  
+moviepy
+
+
