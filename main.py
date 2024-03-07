@@ -668,6 +668,26 @@ class App:
 
                     extensions = ['mov', 'mxf', 'mp4','avi','mkv']
                     file_count = count_files(net_working_folder_path, extensions)
+                    ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
+                    def replace_spaces_with_underscores(folder_path, extensions):
+                        for root, dirs, files in os.walk(folder_path):
+                            for file in files:
+                                if any(file.endswith(ext) for ext in extensions):
+                                    new_name = file.replace(' ', '_')
+                                    new_name = new_name.replace('<', '_')
+                                    new_name = new_name.replace('>', '_')
+                                    new_name = new_name.replace(':', '_')
+                                    new_name = new_name.replace('"', '_')
+                                    new_name = new_name.replace('|', '_')
+                                    new_name = new_name.replace('?', '_')
+                                    new_name = new_name.replace('*', '_')
+                                    if new_name != file:
+                                        os.rename(os.path.join(root, file), os.path.join(root, new_name))
+                                        print(f"Renamed '{file}' to '{new_name}'")
+
+                    replace_spaces_with_underscores(net_working_folder_path, extensions)
+                    ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
+
                     input_folder_path_count = count_files(input_folder_path,extensions)
                     ## ip 폴더에 동영상이 몇개인지 확인한다. 2개 이상일 시 ip 폻더로의 이동작업을 하지 않는다. 여러대의 pc를 돌릴때를 대비하여 너무 많이 한 pc가 가져가지 않음
 
