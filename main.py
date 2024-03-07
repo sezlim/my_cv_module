@@ -668,26 +668,6 @@ class App:
 
                     extensions = ['mov', 'mxf', 'mp4','avi','mkv']
                     file_count = count_files(net_working_folder_path, extensions)
-                    ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
-                    def replace_spaces_with_underscores(folder_path, extensions):
-                        for root, dirs, files in os.walk(folder_path):
-                            for file in files:
-                                if any(file.endswith(ext) for ext in extensions):
-                                    new_name = file.replace(' ', '_')
-                                    new_name = new_name.replace('<', '_')
-                                    new_name = new_name.replace('>', '_')
-                                    new_name = new_name.replace(':', '_')
-                                    new_name = new_name.replace('"', '_')
-                                    new_name = new_name.replace('|', '_')
-                                    new_name = new_name.replace('?', '_')
-                                    new_name = new_name.replace('*', '_')
-                                    if new_name != file:
-                                        os.rename(os.path.join(root, file), os.path.join(root, new_name))
-                                        print(f"Renamed '{file}' to '{new_name}'")
-
-                    replace_spaces_with_underscores(net_working_folder_path, extensions)
-                    ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
-
                     input_folder_path_count = count_files(input_folder_path,extensions)
                     ## ip 폴더에 동영상이 몇개인지 확인한다. 2개 이상일 시 ip 폻더로의 이동작업을 하지 않는다. 여러대의 pc를 돌릴때를 대비하여 너무 많이 한 pc가 가져가지 않음
 
@@ -704,6 +684,25 @@ class App:
                         moving_file_path=file_ready_checker.detect_folder_and_move_file(input_folder_path,net_working_folder_path,['mov', 'mxf', 'mp4','avi','mkv'])
                         # 또는 detect_folder_and_move_file"작업_폴더_경로", "이동_폴더_경로", ['mov', 'mp4']) - 확장자 명시도 가능
                         # input_path의 ip 작업폴더로 이동
+                        ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
+                        def replace_spaces_with_underscores(folder_path, extensions):
+                            for root, dirs, files in os.walk(folder_path):
+                                for file in files:
+                                    if any(file.endswith(ext) for ext in extensions):
+                                        new_name = file.replace(' ', '_')
+                                        new_name = new_name.replace('<', '_')
+                                        new_name = new_name.replace('>', '_')
+                                        new_name = new_name.replace(':', '_')
+                                        new_name = new_name.replace('"', '_')
+                                        new_name = new_name.replace('|', '_')
+                                        new_name = new_name.replace('?', '_')
+                                        new_name = new_name.replace('*', '_')
+                                        if new_name != file:
+                                            os.rename(os.path.join(root, file), os.path.join(root, new_name))
+                                            print(f"Renamed '{file}' to '{new_name}'")
+
+                        replace_spaces_with_underscores(net_working_folder_path, extensions)
+                        ################## 이름오류로 인한 미실행을 막기위한 코드 추가 ########
                         print("이동이 끝났습니다.")
                         time.sleep(10)
                         continue
@@ -717,16 +716,12 @@ class App:
 
 
         def long_running_task_2(net_working_folder_path,finish_folder_path):
-            global input_folder_path, output_folder_path, AME_file_path, selected_still_time, selected_resolution, selected_audio_channel, local_working_folder_path
-            global ffmpeg_path, ffprobe_path, ffplay_path
-            global state_of_multi_1_exit, state_of_multi_2_exit, state_of_gui_exit
             while True:
                 try:
-                    '''
                     global input_folder_path, output_folder_path, AME_file_path, selected_still_time, selected_resolution, selected_audio_channel, local_working_folder_path
                     global ffmpeg_path,ffprobe_path,ffplay_path
                     global state_of_multi_1_exit, state_of_multi_2_exit, state_of_gui_exit
-                    '''
+
                     with state_data_lock:  # 공유 변수에만 락을 적용
                         state_of_multi_2_exit = 1
                         state_of_gui = state_of_gui_exit
@@ -873,7 +868,7 @@ class App:
                     ame_working_in_cli(AME_file_path, jsx_file_path, pid_save_path)
 
                     time.sleep(2)
-                    cnt = 0 ### 사용자가 임의로 ame를 껏을때 감지하기 위한 cnt
+
                     while True:
                         if os.path.exists(status_of_making_process_txt_path):
                             with open(status_of_making_process_txt_path, 'r', encoding='cp949') as file:
@@ -933,19 +928,13 @@ class App:
                                             except psutil.NoSuchProcess:
                                                 raise # ame가 꺼진것으로 보고 종료 합니다.
                                                 return
-                                    elif not process.is_running():
-                                        cnt += 1
-                                        time.sleep(10) ## 보수적으로 100초 지나서도 꺼져있으면 다시 실행한다.
-                                        if cnt > 10:
-                                            raise
-                                        else:
-                                            continue
                                     else:
-                                        continue
-
-                                if content == "실행실패" or not process.is_running():
+                                        able_to_use = False
+                                        print("실행에 실패하였습니다.")
+                                        break
+                                if content == "실행실패":
                                     able_to_use = False
-                                    print("실행에 실패 혹은 AME를 강제종료 한 것 같습니다..")
+                                    print("실행에 실패하였습니다.")
                                     break
                         else:
                             print("상태 메모장 생성을 기다립니다.")
@@ -1057,10 +1046,6 @@ class App:
                 except Exception as e:
                     # 오류 메시지 출력
                     print("오류가 발생했습니다 멀티 2 쉬었다가 다시 시작합니다.: ", e)
-                    try:
-                        module.make_folder(local_working_folder_path, "pre_check", True)
-                    except:
-                        pass
                     time.sleep(5)
                     continue
 
