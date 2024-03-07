@@ -853,7 +853,7 @@ class App:
                     ame_working_in_cli(AME_file_path, jsx_file_path, pid_save_path)
 
                     time.sleep(2)
-
+                    cnt = 0 ### 사용자가 임의로 ame를 껏을때 감지하기 위한 cnt
                     while True:
                         if os.path.exists(status_of_making_process_txt_path):
                             with open(status_of_making_process_txt_path, 'r', encoding='cp949') as file:
@@ -913,6 +913,13 @@ class App:
                                             except psutil.NoSuchProcess:
                                                 raise # ame가 꺼진것으로 보고 종료 합니다.
                                                 return
+                                    elif not process.is_running():
+                                        cnt += 1
+                                        time.sleep(10) ## 보수적으로 100초 지나서도 꺼져있으면 다시 실행한다.
+                                        if cnt > 10:
+                                            raise
+                                        else:
+                                            continue
                                     else:
                                         continue
 
