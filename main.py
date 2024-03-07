@@ -1024,8 +1024,13 @@ class App:
                         time.sleep(100)
                     continue
                 except Exception as e:
+                    global local_working_folder_path
                     # 오류 메시지 출력
                     print("오류가 발생했습니다 멀티 2 쉬었다가 다시 시작합니다.: ", e)
+                    try:
+                        module.make_folder(local_working_folder_path, "pre_check", True)
+                    except:
+                        pass
                     time.sleep(5)
                     continue
 
