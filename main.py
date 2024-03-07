@@ -697,12 +697,16 @@ class App:
 
 
         def long_running_task_2(net_working_folder_path,finish_folder_path):
+            global input_folder_path, output_folder_path, AME_file_path, selected_still_time, selected_resolution, selected_audio_channel, local_working_folder_path
+            global ffmpeg_path, ffprobe_path, ffplay_path
+            global state_of_multi_1_exit, state_of_multi_2_exit, state_of_gui_exit
             while True:
                 try:
+                    '''
                     global input_folder_path, output_folder_path, AME_file_path, selected_still_time, selected_resolution, selected_audio_channel, local_working_folder_path
                     global ffmpeg_path,ffprobe_path,ffplay_path
                     global state_of_multi_1_exit, state_of_multi_2_exit, state_of_gui_exit
-
+                    '''
                     with state_data_lock:  # 공유 변수에만 락을 적용
                         state_of_multi_2_exit = 1
                         state_of_gui = state_of_gui_exit
@@ -1024,7 +1028,6 @@ class App:
                         time.sleep(100)
                     continue
                 except Exception as e:
-                    global local_working_folder_path
                     # 오류 메시지 출력
                     print("오류가 발생했습니다 멀티 2 쉬었다가 다시 시작합니다.: ", e)
                     try:
