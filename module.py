@@ -231,6 +231,8 @@ def move_ip_file_to_local(net_working_folder_path, working_folder):
     # 파일 목록 섞기
     random.shuffle(files)
 
+    time.sleep(3)  #### 폴더에 들어가고 각 os마다 불가한 문자명을 _로 치환하는데 그 순간 가져가게 하지 않기 위해 3초를 쉼 (만약 그사이에 바뀌어 버리면 오류로 처음부터 다시 시작하는 구조)
+
     # 첫 번째 파일 선택
     file_to_move = files[0]
     full_path_of_file =os.path.join(net_working_folder_path, file_to_move)
@@ -675,11 +677,11 @@ def append_still_frame_to_end(video_path, output_path,net_ip_folder_path, ffmpeg
             prev_frame = frame
             break
 
-    print("3까지 됨")
+
     #### step 1 블랙이 있다면 블랙 화면 직전까지 접근 -끝-
 
     cut_1_disolve_2_move_3_still_4 = 0 #cut,disolve, move 인지 판단하는 코드
-    print("4까지 됨")
+
     ###################################################### step 2 끝 #################################
     if cut_1_disolve_2_move_3_still_4 == 0:
         ## 프레임만 5개 읽어봐서 still인지 확인해 보자 5프레임 간격
@@ -852,7 +854,7 @@ def append_still_frame_to_end(video_path, output_path,net_ip_folder_path, ffmpeg
         return  start_frame_time , float(first_non_black_frame_cnt/fps)
 
     if cut_1_disolve_2_move_3_still_4 == 2:
-        print("디졸브 값 2")
+
         threshold = (average_adjacent_differences)/5
         ### 확실한 1초간의 디졸브의 프레임간 밝기변화보다 더 작은 변화를 찾는다.
         cnt = 0
@@ -961,6 +963,7 @@ def compute_audio_similarity(audio_path_1, audio_path_2, threshold, silence_thre
 def rename_based_on_similarity(audio_temp_path, ffmpeg_path, threshold):
     audio_files = [f for f in os.listdir(audio_temp_path) if f.endswith('.wav')]
     channel_counter = 1
+    temp =[]
     try:
         for i in range(len(audio_files)):
             audio_file = audio_files[0]
@@ -969,10 +972,44 @@ def rename_based_on_similarity(audio_temp_path, ffmpeg_path, threshold):
             if audio_file == "":
                 print("검출 끝")
                 continue
-
             for compare_audio_file in (audio_files):
                 try:
-                    if audio_file != compare_audio_file:
+                    if audio_file != compare_audio_file and compare_audio_file not in temp:
+
+                        time.sleep(1)
+                        audio_path_1 = os.path.join(audio_temp_path, audio_file)
+
+                        audio_path_2 = os.path.join(audio_temp_path, compare_audio_file)
+
+                        similarity = compute_audio_similarity(audio_path_1, audio_path_2, threshold=0.8,
+                                                              silence_threshold=0.002)
+                        print(f"{audio_file}와 {compare_audio_file}의 유사도 {similarity}")
+                        if similarity > 0.999999:
+                            similarity = 0
+                            os.remove(os.path.join(audio_temp_path, compare_audio_file))
+                            temp.append(compare_audio_file)
+                            print(f"{audio_file}와 비슷한 {compare_audio_file}을 삭제합니다.")
+                except:
+                    pass
+            audio_files.remove(audio_file)
+    except:
+        pass
+
+
+    audio_files = [f for f in os.listdir(audio_temp_path) if f.endswith('.wav')]
+    channel_counter = 1
+    temp = []
+    try:
+        for i in range(len(audio_files)):
+            audio_file = audio_files[0]
+            most_similar_file = None
+            highest_similarity = 0
+            if audio_file == "":
+                print("검출 끝")
+                continue
+            for compare_audio_file in (audio_files):
+                try:
+                    if audio_file != compare_audio_file and compare_audio_file not in temp:
 
                         time.sleep(1)
                         audio_path_1 = os.path.join(audio_temp_path, audio_file)
@@ -982,7 +1019,6 @@ def rename_based_on_similarity(audio_temp_path, ffmpeg_path, threshold):
 
                         similarity = compute_audio_similarity(audio_path_1, audio_path_2, threshold=0.8,
                                                               silence_threshold=0.002)
-                        time.sleep(1)
                         print(f"유사도는 {similarity}")
                         # if np.any(similarity > threshold) and np.any(similarity > highest_similarity):
                         if np.any(similarity > highest_similarity):
@@ -996,27 +1032,33 @@ def rename_based_on_similarity(audio_temp_path, ffmpeg_path, threshold):
 
 
             # 루프 리스트에서 제거
-            audio_files.remove(audio_file)
+            temp.append(audio_file)
+            # audio_files.remove(audio_file)
 
             if highest_similarity == 0 or highest_similarity >= 0.99:
+                def work(audio_file,channel_counter):
+                    print("같은 유사도의 오디오를 홀짝 모두에 배분합니다.")
+                    way = os.path.join(audio_temp_path, f"copy_{audio_file}")
 
-                way = os.path.join(audio_temp_path, f"copy_{audio_file}")
+                    adjust_audio_volume(os.path.join(audio_temp_path, audio_file), way, -6)
 
-                adjust_audio_volume(os.path.join(audio_temp_path, audio_file), way, -6)
+                    way2 = os.path.join(audio_temp_path, f"copy2_{audio_file}")
 
-                way2 = os.path.join(audio_temp_path, f"copy2_{audio_file}")
+                    shutil.copy(way, way2)
 
-                shutil.copy(way, way2)
+                    os.remove(os.path.join(audio_temp_path, audio_file))
 
-                os.remove(os.path.join(audio_temp_path, audio_file))
+                    os.rename(way, os.path.join(audio_temp_path, f"{channel_counter}ch.wav"))
+                    os.rename(way2, os.path.join(audio_temp_path, f"{channel_counter + 1}ch.wav"))
 
-                os.rename(way, os.path.join(audio_temp_path, f"{channel_counter}ch.wav"))
-                os.rename(way2, os.path.join(audio_temp_path, f"{channel_counter + 1}ch.wav"))
 
+                work(audio_file ,channel_counter)
                 channel_counter += 2
-
+                work(most_similar_file,channel_counter)
+                channel_counter += 2
+                temp.append(most_similar_file)
+                # audio_files.remove(most_similar_file)
             else:
-
                 print(f"{audio_file}이름바꾸기 시도")
                 os.rename(
                     os.path.join(audio_temp_path, audio_file),
@@ -1029,7 +1071,7 @@ def rename_based_on_similarity(audio_temp_path, ffmpeg_path, threshold):
                     os.path.join(audio_temp_path, f"{channel_counter + 1}ch.wav")
                 )
                 channel_counter += 2
-
+                temp.append(most_similar_file)
     except:
         pass
 
@@ -1136,8 +1178,9 @@ def combine_audio_and_video(video_temp_folder_path, audio_temp_path, finish_fold
 
     # 2. 홀수와 짝수 ch를 분리하여 오디오 믹싱을 실시한다.
     if len(odd_files) == 1:
-        os.rename(os.path.join(audio_temp_path, "1ch.wav"), os.path.join(audio_temp_path, "temp_R.wav")) ## LR변화
-        os.rename(os.path.join(audio_temp_path, "2ch.wav"), os.path.join(audio_temp_path, "temp_L.wav"))
+
+        os.rename(os.path.join(audio_temp_path, "1ch.wav"), os.path.join(audio_temp_path, "temp_L.wav")) ### R L, 교체
+        os.rename(os.path.join(audio_temp_path, "2ch.wav"), os.path.join(audio_temp_path, "temp_R.wav"))
     else:
         # cmd 창을 숨기기 위한 설정
         # startupinfo = subprocess.STARTUPINFO()
@@ -1157,6 +1200,8 @@ def combine_audio_and_video(video_temp_folder_path, audio_temp_path, finish_fold
         # cmd_even = f'{ffmpeg_path} {inputs_even} -filter_complex "{filter_complex_even}" -acodec pcm_s16le "{os.path.join(audio_temp_path, "temp_R.wav")}"'
         #
         # subprocess.run(cmd_even, shell=True, startupinfo=startupinfo)
+
+
         odd_files = sorted([f for f in files if 'ch' in f and int(f.split('ch')[0]) % 2 == 1])
 
         # 첫 번째 파일로 시작하여 나머지 파일을 믹싱
@@ -1244,10 +1289,8 @@ def combine_audio_and_video(video_temp_folder_path, audio_temp_path, finish_fold
     audio_files = [os.path.join(audio_temp_path, f) for f in os.listdir(audio_temp_path) if f.endswith('.wav')]
     # FFmpeg 명령 생성
     audio_inputs = ' '.join([f'-i "{audio_file}"' for audio_file in audio_files])
-    print(len(audio_files))
 
     audio_maps = ' '.join([f"-map 0:v:0"] + [f"-map {i + 1}:a:0" for i in range(len(audio_files))])
-
     video_path = os.path.normpath(video_path)
     net_ip_file_path = os.path.basename(net_ip_file_path)
     net_ip_file_path = os.path.splitext(net_ip_file_path)[0] + '.mov'
@@ -1381,14 +1424,14 @@ def extract_and_split_audio_channels_with_ffmpeg(ffmpeg_path,video_path, output_
             elif num_channels == 2:
                 # 왼쪽 채널 추출
                 print(f"START_FRAME_TIME은 {start_frame_time} 채널 2")
-                output_file_left = f"{base_output_name}_L.wav"
+                output_file_left = f"{base_output_name}_R.wav"
                 cmd_left = [
                     str(ffmpeg_path),
                     '-i', video_path,
                     '-ss', str(start_frame_time),
                     '-t', str(global_check_duration),
                     '-map', f'0:a:{i}',
-                    '-af', 'asetpts=PTS-STARTPTS, volume=-15dB, pan=mono|c0=c1', ## 왼쪽은 c1 오른쪽은 c0
+                    '-af', 'asetpts=PTS-STARTPTS, volume=-15dB, pan=mono|c0=c1', ## 왼쪽은 c0 오른쪽은 c1
                     '-ac', '1',
                     str(output_file_left)
                 ]
@@ -1407,7 +1450,7 @@ def extract_and_split_audio_channels_with_ffmpeg(ffmpeg_path,video_path, output_
                     os.remove(output_file_left)
 
                 # 오른쪽 채널 추출
-                output_file_right = f"{base_output_name}_R.wav"
+                output_file_right = f"{base_output_name}_L.wav"
                 cmd_right = [
                     str(ffmpeg_path),
                     '-i', str(video_path),
@@ -1435,7 +1478,7 @@ def extract_and_split_audio_channels_with_ffmpeg(ffmpeg_path,video_path, output_
                     os.remove(output_file_right)
 
         time.sleep(1)
-    else:  # xmf의 경우
+    else:  # mxf의 경우
         # 각 오디오 트랙을 순회
         for i, track in enumerate(audio_tracks):
 
