@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import sys
 import uuid
+import os
 def License(txt_address,overdate,secrete_key):
     def get_mac_address():
         mac = uuid.getnode()
@@ -34,7 +35,7 @@ def License(txt_address,overdate,secrete_key):
                 return True
             else:
                 print("라이센스가 맞지않아 종료합니다.")
-                sys.exit()
+                return False
 
     else:
         try:
@@ -43,6 +44,7 @@ def License(txt_address,overdate,secrete_key):
         except:
             with open(txt_address, 'w+', encoding='utf-8') as file:
                 pass
+            os.system(f'attrib +h "{txt_address}"') ## 파일 숨김 처리
 
         with open(txt_address, 'r+', encoding='utf-8') as file:
             file.seek(0)
@@ -62,7 +64,7 @@ def License(txt_address,overdate,secrete_key):
                     return True
                 else:
                     print("라이센스가 맞지않아 종료합니다.")
-                    sys.exit()
+                    return False
             else:
                 print('라이센스 생성중 ')
                 mac_add=get_mac_address()
@@ -77,6 +79,6 @@ def License(txt_address,overdate,secrete_key):
                 return True
 
 
-check_license =License("test.txt","2024-08-06","0446")
+check_license =License("abc.txt","2024-08-06","0446")
 
 print(check_license)
